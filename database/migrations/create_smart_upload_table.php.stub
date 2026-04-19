@@ -6,14 +6,27 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    public function up()
+    public function up(): void
     {
-        Schema::create('smart_upload_table', function (Blueprint $table) {
+        Schema::create('temporary_uploads', function (Blueprint $table) {
             $table->id();
 
-            // add fields
-
+            $table->string('uuid')->unique();
+            $table->string('original_name');
+            $table->string('mime_type')->nullable();
+            $table->integer('size')->default(0);
+            $table->string('path');
+            $table->string('disk')->default('local');
+            $table->timestamp('expires_at')->nullable();
+            $table->string('form_token')->nullable()->index();
             $table->timestamps();
+
+            $table->index('expires_at');
         });
+    }
+
+    public function down(): void
+    {
+        Schema::dropIfExists('temporary_uploads');
     }
 };
