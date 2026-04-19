@@ -10,9 +10,13 @@ use Illuminate\Support\Str;
 class FileUploader
 {
     protected string $tempDisk;
+
     protected string $tempDirectory;
+
     protected int $expirationHours;
+
     protected int $maxFileSize;
+
     protected array $allowedMimes;
 
     public function __construct()
@@ -33,7 +37,7 @@ class FileUploader
         $uuid = (string) Str::uuid();
 
         $extension = pathinfo($filename, PATHINFO_EXTENSION);
-        $storedFilename = $uuid . '.' . $extension;
+        $storedFilename = $uuid.'.'.$extension;
 
         $expiresAt = now()->addHours($this->expirationHours);
 
@@ -42,7 +46,7 @@ class FileUploader
             'original_name' => $filename,
             'mime_type' => null,
             'size' => 0,
-            'path' => $this->tempDirectory . '/' . $storedFilename,
+            'path' => $this->tempDirectory.'/'.$storedFilename,
             'disk' => $this->tempDisk,
             'expires_at' => $expiresAt,
         ]);
@@ -57,13 +61,13 @@ class FileUploader
             );
         } else {
             $uploadUrl = $disk->path($upload->path);
-            $uploadUrl .= '?token=' . $uuid;
+            $uploadUrl .= '?token='.$uuid;
         }
 
         return [
             'uuid' => $uuid,
             'upload_url' => $uploadUrl,
-            'finished_url' => '/api/upload/' . $uuid . '/finish',
+            'finished_url' => '/api/upload/'.$uuid.'/finish',
             'expires_at' => $expiresAt->toIso8601String(),
         ];
     }
@@ -138,7 +142,7 @@ class FileUploader
         $originalName = $upload->original_name;
         $newFilename = $filename ?? $originalName;
 
-        $path = $directory . '/' . $newFilename;
+        $path = $directory.'/'.$newFilename;
 
         $disk = config('smart-upload.disk', 'local');
 

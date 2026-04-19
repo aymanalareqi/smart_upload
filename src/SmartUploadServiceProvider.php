@@ -2,11 +2,10 @@
 
 namespace Alareqi\SmartUpload;
 
-use Alareqi\SmartUpload\Commands\SmartUploadCommand;
-use Spatie\LaravelPackageTools\Package;
-use Spatie\LaravelPackageTools\PackageServiceProvider;
 use Alareqi\SmartUpload\Jobs\CleanupExpiredUploads;
 use Alareqi\SmartUpload\Support\FileUploader;
+use Spatie\LaravelPackageTools\Package;
+use Spatie\LaravelPackageTools\PackageServiceProvider;
 
 class SmartUploadServiceProvider extends PackageServiceProvider
 {
@@ -26,7 +25,7 @@ class SmartUploadServiceProvider extends PackageServiceProvider
         parent::register();
 
         $this->app->singleton('smart-upload', function ($app) {
-            return new FileUploader();
+            return new FileUploader;
         });
     }
 }

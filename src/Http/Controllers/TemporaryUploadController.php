@@ -2,10 +2,10 @@
 
 namespace Alareqi\SmartUpload\Http\Controllers;
 
-use Illuminate\Routing\Controller;
 use Alareqi\SmartUpload\Support\FileUploader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Routing\Controller;
 
 class TemporaryUploadController extends Controller
 {
