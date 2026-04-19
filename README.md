@@ -105,6 +105,51 @@ class PostController extends Controller
 }
 ```
 
+### Multiple Files
+
+For multiple file uploads, pass an array of UUIDs:
+
+```php
+use Alareqi\SmartUpload\Concerns\HasFileUploads;
+use Illuminate\Http\Request;
+
+class PostController extends Controller
+{
+    use HasFileUploads;
+
+    public function store(Request $request)
+    {
+        $imagePaths = [];
+
+        // $request->image_uploads is array: ['uuid1', 'uuid2', 'uuid3']
+        foreach ($request->image_uploads as $uuid) {
+            $imagePaths[] = $this->convertUpload(
+                $uuid,
+                'posts/images'
+            );
+        }
+
+        // Save to database
+        Post::create([
+            'title' => $request->title,
+            'images' => json_encode($imagePaths),
+        ]);
+    }
+}
+```
+
+Or convert each with custom filename:
+
+```php
+foreach ($request->images as $index => $uuid) {
+    $path = $this->convertUpload(
+        $uuid,
+        'posts/images',
+        'post_' . $post->id . '_image_' . $index . '.jpg'  // Custom filename
+    );
+}
+```
+
 ## Configuration
 
 Edit `config/smart-upload.php`:
