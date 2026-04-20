@@ -66,7 +66,7 @@ Response:
     "original_name": "photo.jpg",
     "size": 1024,
     "mime_type": "image/jpeg",
-    "upload_url": "https://yourapp.com/storage/tmp/abc-123.jpg",
+    "temp_url": "https://yourapp.com/storage/tmp/abc-123.jpg",
     "expires_at": "2024-01-01T12:00:00Z"
 }
 ```

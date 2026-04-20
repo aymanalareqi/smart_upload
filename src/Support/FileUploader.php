@@ -29,8 +29,8 @@ class FileUploader
         $uuid = (string) Str::uuid();
 
         $extension = $file->getClientOriginalExtension();
-        $extension = $extension ? '.'.$extension : '';
-        $storedFilename = $uuid.$extension;
+        $extension = $extension ? '.' . $extension : '';
+        $storedFilename = $uuid . $extension;
 
         $expiresAt = now()->addHours($this->expirationHours);
 
@@ -40,7 +40,7 @@ class FileUploader
             $storedFilename
         );
 
-        $path = $this->tempDirectory.'/'.$storedFilename;
+        $path = $this->tempDirectory . '/' . $storedFilename;
 
         $metadata = [
             'uuid' => $uuid,
@@ -63,7 +63,7 @@ class FileUploader
                 ['Content-Type' => $file->getMimeType()]
             );
         } else {
-            $uploadUrl = $disk->path($path);
+            $uploadUrl = $disk->temporaryUrl($path, $expiresAt);
         }
 
         return [
@@ -72,7 +72,7 @@ class FileUploader
             'original_name' => $file->getClientOriginalName(),
             'size' => $file->getSize(),
             'mime_type' => $file->getMimeType(),
-            'upload_url' => $uploadUrl,
+            'temp_url' => $uploadUrl,
             'expires_at' => $expiresAt->toIso8601String(),
         ];
     }
@@ -83,7 +83,7 @@ class FileUploader
 
         foreach ($files as $file) {
             $filename = basename($file);
-            if (str_starts_with($filename, $uuid.'.')) {
+            if (str_starts_with($filename, $uuid . '.')) {
                 return $file;
             }
         }
@@ -107,7 +107,7 @@ class FileUploader
         }
 
         $newFilename = $filename ?? $metadata['original_name'];
-        $path = $directory.'/'.$newFilename;
+        $path = $directory . '/' . $newFilename;
 
         $disk = config('smart-upload.disk', 'local');
 
