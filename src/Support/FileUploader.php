@@ -23,7 +23,7 @@ class FileUploader
         $this->expirationHours = $config['expiration_hours'] ?? 24;
     }
 
-    public function init(array $data): array
+    public function uploadFile(array $data): array
     {
         $filename = $data['filename'] ?? 'file';
 

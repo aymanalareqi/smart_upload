@@ -16,21 +16,14 @@ class TemporaryUploadController extends Controller
         $this->uploader = $uploader;
     }
 
-    public function init(Request $request): JsonResponse
+    public function uploadFile(Request $request): JsonResponse
     {
         $validated = $request->validate([
             'filename' => 'required|string',
         ]);
 
-        $result = $this->uploader->init($validated);
+        $result = $this->uploader->uploadFile($validated);
 
         return response()->json($result);
-    }
-
-    public function cancel(string $uuid): JsonResponse
-    {
-        $success = $this->uploader->cancel($uuid);
-
-        return response()->json(['success' => $success]);
     }
 }
