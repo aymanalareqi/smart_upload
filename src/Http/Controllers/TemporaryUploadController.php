@@ -6,7 +6,6 @@ use Alareqi\SmartUpload\Support\FileUploader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
-use Illuminate\Http\UploadedFile;
 
 class TemporaryUploadController extends Controller
 {
