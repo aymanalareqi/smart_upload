@@ -6,6 +6,7 @@ use Alareqi\SmartUpload\Support\FileUploader;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Routing\Controller;
+use Illuminate\Http\UploadedFile;
 
 class TemporaryUploadController extends Controller
 {
@@ -19,10 +20,11 @@ class TemporaryUploadController extends Controller
     public function uploadFile(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'filename' => 'required|string',
+            'file' => config('smart-upload.temporary_file_upload.rules'),
         ]);
 
-        $result = $this->uploader->uploadFile($validated);
+        $file = $validated['file'];
+        $result = $this->uploader->uploadFile($file);
 
         return response()->json($result);
     }

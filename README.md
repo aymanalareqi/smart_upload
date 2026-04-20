@@ -39,19 +39,22 @@ No migrations needed - this package uses file-based temporary storage.
 
 | Method | Endpoint | Description |
 |--------|----------|------------|
-| POST | `/api/upload-file` | Get upload URL |
+| POST | `/api/upload-file` | Upload file |
 
-### Get Upload URL
+### Upload File
 
-Request a signed upload URL:
+Upload a file directly to the endpoint:
 
 ```http
 POST /api/upload-file
-Content-Type: application/json
+Content-Type: multipart/form-data
 
-{
-    "filename": "photo.jpg"
-}
+------WebKitFormBoundary
+Content-Disposition: form-data; name="file"; filename="photo.jpg"
+Content-Type: image/jpeg
+
+[file content]
+------WebKitFormBoundary--
 ```
 
 Response:
@@ -59,7 +62,11 @@ Response:
 ```json
 {
     "uuid": "abc-123-uuid",
-    "upload_url": "https://yourapp.com/storage/tmp/abc-123.jpg?token=...",
+    "path": "tmp/abc-123.jpg",
+    "original_name": "photo.jpg",
+    "size": 1024,
+    "mime_type": "image/jpeg",
+    "upload_url": "https://yourapp.com/storage/tmp/abc-123.jpg",
     "expires_at": "2024-01-01T12:00:00Z"
 }
 ```
@@ -150,7 +157,7 @@ return [
     // Temporary directory
     'temp_directory' => env('SMART_UPLOAD_TEMP_DIR', 'smart-upload-tmp'),
 
-    // Hours until temp file expires
+    // Hours until temp file expires (also used as cache TTL)
     'expiration_hours' => 24,
 
     // Max file size in KB
@@ -158,6 +165,11 @@ return [
 
     // Allowed mimes
     'allowed_mimes' => ['jpg', 'jpeg', 'png', 'gif', 'pdf'],
+
+    // Cache driver for metadata
+    'cache' => [
+        'driver' => env('SMART_UPLOAD_CACHE_DRIVER', 'file'),
+    ],
 
     // Temporary upload settings
     'temporary_file_upload' => [

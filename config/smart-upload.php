@@ -13,6 +13,10 @@ return [
 
     'allowed_mimes' => explode(',', env('SMART_UPLOAD_ALLOWED_MIMES', 'jpg,jpeg,png,gif,pdf,doc,docx')),
 
+    'cache' => [
+        'driver' => env('SMART_UPLOAD_CACHE_DRIVER', 'file'),
+    ],
+
     'temporary_file_upload' => [
         'disk' => env('SMART_UPLOAD_TEMP_DISK', 'local'),
 

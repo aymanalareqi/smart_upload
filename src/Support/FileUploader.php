@@ -2,6 +2,8 @@
 
 namespace Alareqi\SmartUpload\Support;
 
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -22,63 +24,57 @@ class FileUploader
         $this->expirationHours = $config['expiration_hours'] ?? 24;
     }
 
-    public function uploadFile(array $data): array
+    public function uploadFile(UploadedFile $file): array
     {
-        $filename = $data['filename'] ?? 'file';
-
         $uuid = (string) Str::uuid();
 
-        $extension = pathinfo($filename, PATHINFO_EXTENSION);
-        $storedFilename = $uuid . '.' . $extension;
+        $extension = $file->getClientOriginalExtension();
+        $extension = $extension ? '.'.$extension : '';
+        $storedFilename = $uuid.$extension;
 
         $expiresAt = now()->addHours($this->expirationHours);
 
+        Storage::disk($this->tempDisk)->putFileAs(
+            $this->tempDirectory,
+            $file,
+            $storedFilename
+        );
+
+        $path = $this->tempDirectory.'/'.$storedFilename;
+
         $metadata = [
             'uuid' => $uuid,
-            'original_name' => $filename,
+            'path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
             'expires_at' => $expiresAt->toIso8601String(),
         ];
 
-        $metadataFile = $this->tempDirectory . '/' . $uuid . '.meta.json';
-        Storage::disk($this->tempDisk)->put($metadataFile, json_encode($metadata));
+        $cacheDriver = config('smart-upload.cache.driver', 'file');
+        Cache::store($cacheDriver)->put("smart_upload_{$uuid}", $metadata, $this->expirationHours * 60);
 
         $disk = Storage::disk($this->tempDisk);
 
         if ($this->tempDisk === 's3') {
             $uploadUrl = $disk->temporaryUrl(
-                $this->tempDirectory . '/' . $storedFilename,
+                $path,
                 $expiresAt,
-                ['Content-Type' => 'application/octet-stream']
+                ['Content-Type' => $file->getMimeType()]
             );
         } else {
-            $uploadUrl = $disk->path($this->tempDirectory . '/' . $storedFilename);
-            $uploadUrl .= '?token=' . $uuid;
+            $uploadUrl = $disk->path($path);
         }
 
         return [
             'uuid' => $uuid,
+            'path' => $path,
+            'original_name' => $file->getClientOriginalName(),
+            'size' => $file->getSize(),
+            'mime_type' => $file->getMimeType(),
             'upload_url' => $uploadUrl,
             'expires_at' => $expiresAt->toIso8601String(),
         ];
-    }
-
-    protected function getMetadata(string $uuid): ?array
-    {
-        $metadataFile = $this->tempDirectory . '/' . $uuid . '.meta.json';
-
-        if (! Storage::disk($this->tempDisk)->exists($metadataFile)) {
-            return null;
-        }
-
-        $content = Storage::disk($this->tempDisk)->get($metadataFile);
-
-        return json_decode($content, true);
-    }
-
-    protected function deleteMetadata(string $uuid): void
-    {
-        $metadataFile = $this->tempDirectory . '/' . $uuid . '.meta.json';
-        Storage::disk($this->tempDisk)->delete($metadataFile);
     }
 
     protected function findTempFile(string $uuid): ?string
@@ -87,7 +83,7 @@ class FileUploader
 
         foreach ($files as $file) {
             $filename = basename($file);
-            if (str_starts_with($filename, $uuid . '.')) {
+            if (str_starts_with($filename, $uuid.'.')) {
                 return $file;
             }
         }
@@ -95,43 +91,23 @@ class FileUploader
         return null;
     }
 
-    public function cancel(string $uuid): bool
-    {
-        $metadata = $this->getMetadata($uuid);
-
-        if (! $metadata) {
-            return false;
-        }
-
-        $tempFile = $this->findTempFile($uuid);
-
-        if ($tempFile) {
-            Storage::disk($this->tempDisk)->delete($tempFile);
-        }
-
-        $this->deleteMetadata($uuid);
-
-        return true;
-    }
-
     public function convert(string $uuid, string $directory, ?string $filename = null): string
     {
-        $metadata = $this->getMetadata($uuid);
+        $cacheDriver = config('smart-upload.cache.driver', 'file');
+        $metadata = Cache::store($cacheDriver)->get("smart_upload_{$uuid}");
 
         if (! $metadata) {
             throw new \RuntimeException("Temporary upload not found: {$uuid}");
         }
 
-        $originalName = $metadata['original_name'];
-        $newFilename = $filename ?? $originalName;
+        $tempFile = $metadata['path'];
 
-        $path = $directory . '/' . $newFilename;
-
-        $tempFile = $this->findTempFile($uuid);
-
-        if (! $tempFile) {
+        if (! $tempFile || ! Storage::disk($this->tempDisk)->exists($tempFile)) {
             throw new \RuntimeException("Temporary file not found: {$uuid}");
         }
+
+        $newFilename = $filename ?? $metadata['original_name'];
+        $path = $directory.'/'.$newFilename;
 
         $disk = config('smart-upload.disk', 'local');
 
@@ -141,13 +117,15 @@ class FileUploader
         );
 
         Storage::disk($this->tempDisk)->delete($tempFile);
-        $this->deleteMetadata($uuid);
+        Cache::store($cacheDriver)->forget("smart_upload_{$uuid}");
 
         return $path;
     }
 
     public function getUpload(string $uuid): ?array
     {
-        return $this->getMetadata($uuid);
+        $cacheDriver = config('smart-upload.cache.driver', 'file');
+
+        return Cache::store($cacheDriver)->get("smart_upload_{$uuid}");
     }
 }
